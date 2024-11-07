@@ -22,21 +22,22 @@
 namespace traccc::opts {
 
 /// Configuration for track finding
-class track_finding : public interface,
-                      public config_provider<finding_config<float>>,
-                      public config_provider<finding_config<double>> {
+class track_finding : public interface, public config_provider<finding_config> {
 
     public:
     /// Constructor
     track_finding();
 
     /// Configuration conversion operators
-    operator finding_config<float>() const override;
-    operator finding_config<double>() const override;
+    operator finding_config() const override;
 
     private:
     /// @name Options
     /// @{
+    /// Max number of branches per seed
+    unsigned int max_num_branches_per_seed = 10;
+    /// Max number of branches per surface
+    unsigned int max_num_branches_per_surface = 10;
     /// Number of track candidates per seed
     opts::value_array<unsigned int, 2> track_candidates_range{3, 100};
     /// Minimum step length that track should make to reach the next surface. It
@@ -51,6 +52,8 @@ class track_finding : public interface,
     unsigned int nmax_per_seed = 10;
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;
+    /// PDG number for particle hypothesis (Default: muon)
+    int pdg_number = 13;
     /// @}
 
     /// Print the specific options of this class

@@ -12,7 +12,7 @@
 
 // detray include(s).
 #include "detray/geometry/barcode.hpp"
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 #include "detray/propagator/actor_chain.hpp"
 #include "detray/propagator/actors/aborters.hpp"
 #include "detray/propagator/actors/parameter_resetter.hpp"
@@ -49,10 +49,11 @@ struct seed_generator {
     /// @param stddevs standard deviations for track parameter smearing
     bound_track_parameters operator()(
         const detray::geometry::barcode surface_link,
-        const free_track_parameters& free_param) {
+        const free_track_parameters& free_param,
+        const detray::pdg_particle<scalar>& ptc_type) {
 
         // Get bound parameter
-        const detray::surface sf{m_detector, surface_link};
+        const detray::tracking_surface sf{m_detector, surface_link};
 
         const cxt_t ctx{};
         auto bound_vec = sf.free_to_bound_vector(ctx, free_param.vector());
@@ -66,14 +67,14 @@ struct seed_generator {
         using interactor_type =
             detray::pointwise_material_interactor<algebra_type>;
 
+        assert(ptc_type.charge() * bound_param.qop() > 0.f);
+
         // Apply interactor
         typename interactor_type::state interactor_state;
         interactor_state.do_multiple_scattering = false;
         interactor_type{}.update(
-            bound_param, interactor_state,
-            static_cast<int>(detray::navigation::direction::e_backward), sf,
-            std::abs(sf.cos_angle(ctx, bound_param.dir(),
-                                  bound_param.bound_local())));
+            ctx, ptc_type, bound_param, interactor_state,
+            static_cast<int>(detray::navigation::direction::e_backward), sf);
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 

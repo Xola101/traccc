@@ -6,10 +6,12 @@
  */
 
 // Project include(s).
+#include "../sanity/contiguous_on.cuh"
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/finding_global_counter.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/device/add_links_for_holes.hpp"
@@ -20,6 +22,7 @@
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/prune_tracks.hpp"
+#include "traccc/utils/projections.hpp"
 
 // detray include(s).
 #include "detray/core/detector.hpp"
@@ -43,10 +46,10 @@
 #include <thrust/unique.h>
 
 // System include(s).
+#include <cassert>
 #include <vector>
 
 namespace traccc::cuda {
-
 namespace kernels {
 
 /// CUDA kernel for running @c traccc::device::make_barcode_sequence
@@ -62,12 +65,14 @@ __global__ void make_barcode_sequence(
 /// CUDA kernel for running @c traccc::device::apply_interaction
 template <typename detector_t>
 __global__ void apply_interaction(
-    typename detector_t::view_type det_data, const int n_params,
+    typename detector_t::view_type det_data, const finding_config cfg,
+    const int n_params,
     bound_track_parameters_collection_types::view params_view) {
 
     int gid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    device::apply_interaction<detector_t>(gid, det_data, n_params, params_view);
+    device::apply_interaction<detector_t>(gid, cfg, det_data, n_params,
+                                          params_view);
 }
 
 /// CUDA kernel for running @c traccc::device::count_measurements
@@ -270,6 +275,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     measurement_collection_types::const_view::size_type n_measurements =
         m_copy.get_size(measurements);
 
+    assert(is_contiguous_on(measurement_module_projection(), m_mr.main, m_copy,
+                            m_stream, measurements));
+
     // Get copy of barcode uniques
     measurement_collection_types::buffer uniques_buffer{n_measurements,
                                                         m_mr.main};
@@ -345,7 +353,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         nThreads = m_warp_size * 2;
         nBlocks = (n_in_params + nThreads - 1) / nThreads;
         kernels::apply_interaction<detector_type>
-            <<<nBlocks, nThreads, 0, stream>>>(det_view, n_in_params,
+            <<<nBlocks, nThreads, 0, stream>>>(det_view, m_cfg, n_in_params,
                                                in_params_buffer);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

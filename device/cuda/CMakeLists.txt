@@ -7,6 +7,9 @@
 # Enable CUDA as a language.
 enable_language( CUDA )
 
+# CMake 3.26 is the first to support C++20 in CUDA.
+cmake_minimum_required( VERSION 3.26 )
+
 # Find the CUDA toolkit
 find_package( CUDAToolkit REQUIRED )
 
@@ -28,6 +31,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/utils/opaque_stream.cpp"
   "src/utils/utils.hpp"
   "src/utils/utils.cpp"
+  "src/sanity/contiguous_on.cuh"
+  "src/sanity/ordered_on.cuh"
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"

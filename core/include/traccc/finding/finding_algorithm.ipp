@@ -7,10 +7,13 @@
 
 // Project include(s).
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/sanity/contiguous_on.hpp"
+#include "traccc/utils/particle.hpp"
+#include "traccc/utils/projections.hpp"
 
 // detray include(s).
 #include "detray/geometry/barcode.hpp"
-#include "detray/geometry/surface.hpp"
+#include "detray/geometry/tracking_surface.hpp"
 
 // System include
 #include <algorithm>
@@ -28,6 +31,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
+
+    // Check contiguity of the measurements
+    assert(host::is_contiguous_on(measurement_module_projection(),
+                                  vecmem::get_data(measurements)));
 
     // Get copy of barcode uniques
     std::vector<measurement> uniques;
@@ -125,17 +132,18 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *************************/
 
             // Get intersection at surface
-            const detray::surface sf{det, in_param.surface_link()};
+            const detray::tracking_surface sf{det, in_param.surface_link()};
 
             const cxt_t ctx{};
 
             // Apply interactor
             typename interactor_type::state interactor_state;
             interactor_type{}.update(
+                ctx,
+                detail::correct_particle_hypothesis(m_cfg.ptc_hypothesis,
+                                                    in_param),
                 in_param, interactor_state,
-                static_cast<int>(detray::navigation::direction::e_forward), sf,
-                std::abs(
-                    sf.cos_angle(ctx, in_param.dir(), in_param.bound_local())));
+                static_cast<int>(detray::navigation::direction::e_forward), sf);
 
             // Get barcode and measurements range on surface
             const auto bcd = in_param.surface_link();
@@ -243,6 +251,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             const auto& param = updated_params[link_id];
             // Create propagator state
             typename propagator_type::state propagation(param, field, det);
+            propagation.set_particle(detail::correct_particle_hypothesis(
+                m_cfg.ptc_hypothesis, param));
+
             propagation._stepping
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     m_cfg.propagation.stepping.step_constraint);

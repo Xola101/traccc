@@ -18,11 +18,20 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.67.0.tar.gz;URL_MD5;e874ea4299bdfa55b74df1ad71fae066"
+"URL;https://github.com/acts-project/detray/archive/refs/tags/v0.73.0.tar.gz;URL_MD5;ada6e82aff6b1082dea8fc95ba0f3b9c"
    CACHE STRING "Source for Detray, when built as part of this project" )
 
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
-FetchContent_Declare( Detray ${TRACCC_DETRAY_SOURCE} )
+
+# Mark the import as a system library on modern CMake versions
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.25.0)
+   set(TRACCC_DETRAY_SOURCE_FULL "${TRACCC_DETRAY_SOURCE};SYSTEM")
+else()
+   set(TRACCC_DETRAY_SOURCE_FULL "${TRACCC_DETRAY_SOURCE}")
+endif()
+mark_as_advanced( TRACCC_DETRAY_SOURCE_FULL )
+
+FetchContent_Declare( Detray ${TRACCC_DETRAY_SOURCE_FULL} )
 
 # Options used in the build of Detray.
 set( DETRAY_CUSTOM_SCALARTYPE "float" CACHE STRING

@@ -17,6 +17,7 @@
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
+#include "traccc/utils/particle.hpp"
 
 // detray include(s).
 #include "detray/propagator/actor_chain.hpp"
@@ -171,6 +172,8 @@ class kalman_fitter {
         // Create propagator state
         typename propagator_type::state propagation(
             seed_params, m_field, m_detector, std::move(nav_candidates));
+        propagation.set_particle(detail::correct_particle_hypothesis(
+            m_cfg.ptc_hypothesis, seed_params));
 
         // @TODO: Should be removed once detray is fixed to set the
         // volume in the constructor
@@ -218,8 +221,7 @@ class kalman_fitter {
              it != track_states.rend(); ++it) {
 
             // Run kalman smoother
-            const detray::surface<detector_type> sf{m_detector,
-                                                    it->surface_link()};
+            const detray::tracking_surface sf{m_detector, it->surface_link()};
             sf.template visit_mask<gain_matrix_smoother<algebra_type>>(
                 *it, *(it - 1));
         }
@@ -235,8 +237,8 @@ class kalman_fitter {
 
         for (const auto& trk_state : track_states) {
 
-            const detray::surface<detector_type> sf{m_detector,
-                                                    trk_state.surface_link()};
+            const detray::tracking_surface sf{m_detector,
+                                              trk_state.surface_link()};
             sf.template visit_mask<statistics_updater<algebra_type>>(fit_res,
                                                                      trk_state);
         }

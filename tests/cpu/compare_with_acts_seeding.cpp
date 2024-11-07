@@ -142,7 +142,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     acts_config.rMin = traccc_config.rMin;
     acts_config.rMax = traccc_config.rMax;
     acts_config.rMinMiddle = 0.f;
-    acts_config.rMaxMiddle = std::numeric_limits<traccc::scalar>::max();
+    acts_config.rMaxMiddle = std::numeric_limits<float>::max();
     acts_config.deltaRMin = traccc_config.deltaRMin;
     acts_config.deltaRMinTopSP = traccc_config.deltaRMin;
     acts_config.deltaRMinBottomSP = traccc_config.deltaRMin;
@@ -272,7 +272,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2);
 
     const Acts::Range1D<float> rMiddleSPRange(
-        std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
+        std::floor(static_cast<float>(rRangeSPExtent.min(Acts::binR)) / 2.f) *
+                2.f +
             acts_config.deltaRMiddleMinSPRange,
         up - acts_config.deltaRMiddleMaxSPRange);
 

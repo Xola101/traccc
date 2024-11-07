@@ -38,17 +38,28 @@ static constexpr std::size_t warpSize =
 #endif
 
 template <typename TAcc>
-inline WorkDiv makeWorkDiv(Idx blocksPerGrid,
-                           Idx threadsPerBlockOrElementsPerThread) {
+constexpr bool accSupportsMultiThreadBlocks() {
     if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt> ||
-                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuHipRt>) {
-        const auto elementsPerThread = Idx{1};
-        return WorkDiv{blocksPerGrid, threadsPerBlockOrElementsPerThread,
-                       elementsPerThread};
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuHipRt> ||
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagCpuOmp2Threads> ||
+                  ::alpaka::accMatchesTags<TAcc, ::alpaka::TagCpuThreads>) {
+        return true;
     } else {
-        const auto threadsPerBlock = Idx{1};
-        return WorkDiv{blocksPerGrid, threadsPerBlock,
-                       threadsPerBlockOrElementsPerThread};
+        return false;
+    }
+}
+
+template <typename TAcc>
+inline WorkDiv makeWorkDiv(Idx blocks, Idx threadsOrElements) {
+    const Idx blocksPerGrid = std::max(Idx{1}, blocks);
+    if constexpr (accSupportsMultiThreadBlocks<TAcc>()) {
+        const Idx threadsPerBlock(threadsOrElements);
+        const Idx elementsPerThread = Idx{1};
+        return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+    } else {
+        const Idx threadsPerBlock = Idx{1};
+        const Idx elementsPerThread(threadsOrElements);
+        return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     }
 }
 
