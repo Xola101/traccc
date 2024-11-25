@@ -24,14 +24,14 @@ target_link_libraries( traccc_tests_common
     PUBLIC dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
            detray::core detray::detectors detray::io detray::test_utils  covfie::core traccc::core traccc::io )
 
-# Use ROOT in traccc_tests_common, if requested.
-#if( TRACCC_USE_ROOT )
-#   find_package( ROOT COMPONENTS Core RIO Hist REQUIRED )
-#   target_link_libraries( traccc_tests_common
-#      PRIVATE ROOT::Core ROOT::RIO ROOT::Hist )
-#   target_compile_definitions( traccc_tests_common
-#      PRIVATE TRACCC_HAVE_ROOT )
-#endif()
+ Use ROOT in traccc_tests_common, if requested.
+if( TRACCC_USE_ROOT )
+   find_package( ROOT COMPONENTS Core RIO Hist REQUIRED )
+   target_link_libraries( traccc_tests_common
+      PRIVATE ROOT::Core ROOT::RIO ROOT::Hist )
+   target_compile_definitions( traccc_tests_common
+      PRIVATE TRACCC_HAVE_ROOT )
+endif()
 
 # Add all of the test subdirectories.
 add_subdirectory( core )
